@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="pageTitle">Internet Portal</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;600&display=swap');
+
+        :root {
+            --bg-dark: #09090b;
+            --panel-bg: #18181b;
+            --matrix-green: #22c55e;
+            --neon-blue: #0ea5e9;
+            --neon-red: #ef4444;
+            --neon-purple: #a855f7;
+            --neon-yellow: #eab308;
+            --text-main: #e4e4e7;
+            --text-muted: #a1a1aa;
+        }
+
+        body {
+            font-family: 'Fira Code', monospace;
+            background-color: var(--bg-dark);
+            background-image: radial-gradient(circle at 50% 0%, #1e1e24 0%, transparent 70%);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        .container {
+            background-color: var(--panel-bg);
+            padding: 3rem 2.5rem;
+            border-radius: 12px;
+            box-shadow: 0 0 30px rgba(14, 165, 233, 0.1);
+            border: 1px solid #27272a;
+            border-top: 2px solid var(--neon-blue);
+            text-align: center;
+            max-width: 450px;
+            width: 90%;
+            position: relative;
+        }
+
+        .header h2 {
+            margin: 0;
+            font-size: 1.5rem;
+            color: var(--text-main);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px rgba(14, 165, 233, 0.5);
+        }
+
+        .header p { color: var(--neon-blue); font-size: 0.85rem; margin-top: 0.5rem; margin-bottom: 2rem; }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.5rem 1.5rem;
+            border-radius: 4px;
+            background-color: #000;
+            border: 1px solid #333;
+            font-size: 0.85rem;
+            margin-bottom: 2rem;
+        }
+
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; }
+        .status-dot.online { background-color: var(--matrix-green); box-shadow: 0 0 8px var(--matrix-green); }
+        .status-dot.offline { background-color: var(--neon-red); box-shadow: 0 0 8px var(--neon-red); }
+
+        .btn-group { display: flex; flex-direction: column; gap: 0.75rem; }
+
+        button {
+            font-family: 'Fira Code', monospace;
+            padding: 0.85rem 1rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            background-color: transparent;
+            color: var(--text-main);
+            border: 1px solid #3f3f46;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-content { display: flex; align-items: center; gap: 1rem; }
+        button svg { opacity: 0.8; }
+
+        .btn-on { border-left: 3px solid var(--matrix-green); }
+        .btn-on:hover { background-color: rgba(34, 197, 94, 0.1); border-color: var(--matrix-green); }
+
+        .btn-off { border-left: 3px solid var(--neon-red); }
+        .btn-off:hover { background-color: rgba(239, 68, 68, 0.1); border-color: var(--neon-red); }
+
+        .btn-sys { border-left: 3px solid var(--neon-purple); }
+        .btn-sys:hover { background-color: rgba(168, 85, 247, 0.1); border-color: var(--neon-purple); }
+
+        .btn-watchdog { border-left: 3px solid var(--neon-yellow); margin-bottom: 0.5rem; }
+        .btn-watchdog.active { background-color: rgba(234, 179, 8, 0.15); border-color: var(--neon-yellow); color: var(--neon-yellow); }
+        .btn-watchdog:hover { background-color: rgba(234, 179, 8, 0.1); border-color: var(--neon-yellow); }
+
+        #terminal-log {
+            margin-top: 1.5rem;
+            background-color: #000;
+            padding: 1rem;
+            border-radius: 4px;
+            border: 1px solid #27272a;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-align: left;
+            height: 100px;
+            overflow-y: auto;
+        }
+        
+        .log-entry { margin: 0.2rem 0; font-family: 'Fira Code', monospace; }
+        .log-time { color: var(--neon-blue); margin-right: 0.5rem; }
+        .log-warn { color: var(--neon-yellow); }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #000; }
+        ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 3px; }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header">
+            <h2 id="userHeader">SYS_PORTAL</h2>
+            <p>ROOT ACCESS GRANTED</p>
+        </div>
+
+        <div class="status-badge">
+            <div class="status-dot" id="statusDot"></div>
+            <span id="statusText">AWAITING PING...</span>
+        </div>
+
+        <div class="btn-group">
+            <button class="btn-watchdog" id="btnAutoLogin" onclick="toggleAutoLogin()">
+                <div class="btn-content">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                    AUTO-RECONNECT
+                </div>
+                <span id="autoLoginState">OFF</span>
+            </button>
+
+            <button class="btn-on" onclick="executeCommand('on', 'api/internet/on')">
+                <div class="btn-content">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                    INIT_CONNECTION
+                </div>
+            </button>
+
+            <button class="btn-off" onclick="executeCommand('off', 'api/internet/off')">
+                <div class="btn-content">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 2.829a4.978 4.978 0 01-1.414-2.83m-1.414 5.658a9 9 0 01-2.167-9.238m7.824 2.167a1 1 0 111.414 1.414m-1.414-1.414L3 3m8.293 8.293l1.414 1.414"></path></svg>
+                    TERM_CONNECTION
+                </div>
+            </button>
+
+            <div style="display: flex; gap: 0.75rem;">
+                <button class="btn-sys" style="flex: 1;" onclick="executeCommand('lock', 'api/system/lock')">
+                    <div class="btn-content">
+                        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                        LOCK
+                    </div>
+                </button>
+                <button class="btn-sys" style="flex: 1;" onclick="executeCommand('signout', 'api/system/signout')">
+                    <div class="btn-content">
+                        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                        LOGOUT
+                    </div>
+                </button>
+            </div>
+        </div>
+
+        <div id="terminal-log">
+            <div class="log-entry"><span class="log-time">[SYS]</span> System initialized.</div>
+        </div>
+    </div>
+
+    <script>
+        let wasOffline = false;
+
+        function logToTerminal(message, isWarning = false) {
+            const terminal = document.getElementById('terminal-log');
+            const time = new Date().toLocaleTimeString('en-US', { hour12: false });
+            const msgClass = isWarning ? 'log-warn' : '';
+            terminal.innerHTML += `<div class="log-entry ${msgClass}"><span class="log-time">[${time}]</span> ${message}</div>`;
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+
+        async function toggleAutoLogin() {
+            try {
+                const response = await fetch('/api/system/autologin', { method: 'POST' });
+                const data = await response.json();
+                updateAutoLoginUI(data.active);
+                logToTerminal(`[SYS] ${data.message}`);
+            } catch (error) {
+                logToTerminal(`[ERR] Failed to toggle Watchdog.`);
+            }
+        }
+
+        function updateAutoLoginUI(isActive) {
+            const btn = document.getElementById('btnAutoLogin');
+            const stateText = document.getElementById('autoLoginState');
+            if (isActive) {
+                btn.classList.add('active');
+                stateText.innerText = 'ON';
+            } else {
+                btn.classList.remove('active');
+                stateText.innerText = 'OFF';
+            }
+        }
+
+        async function checkStatus() {
+            try {
+                const response = await fetch('/api/internet/status');
+                const data = await response.json();
+                
+                const dot = document.getElementById('statusDot');
+                const text = document.getElementById('statusText');
+                
+                // Sync Auto-login button with backend state
+                updateAutoLoginUI(data.autoReconnect);
+
+                if (data.connected) {
+                    dot.className = 'status-dot online';
+                    text.innerText = 'UPLINK_ESTABLISHED';
+                    text.style.color = 'var(--matrix-green)';
+                    if (wasOffline) {
+                        logToTerminal('[NET] Connection restored successfully.');
+                        wasOffline = false;
+                    }
+                } else {
+                    dot.className = 'status-dot offline';
+                    text.innerText = 'NO_CONNECTION';
+                    text.style.color = 'var(--neon-red)';
+                    if (!wasOffline) {
+                        logToTerminal('[WARN] Connection lost...', true);
+                        if (data.autoReconnect) logToTerminal('[WATCHDOG] Firing auto-reconnect payload...', true);
+                        wasOffline = true;
+                    }
+                }
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
+        async function executeCommand(actionName, endpoint) {
+            logToTerminal(`Executing: ${actionName.toUpperCase()}`);
+            try {
+                const response = await fetch(`/${endpoint}`, { method: 'POST' });
+                const data = await response.json();
+                
+                if (data.success) {
+                    logToTerminal(`[OK] ${data.message}`);
+                    if (actionName === 'on' || actionName === 'off') setTimeout(checkStatus, 1500); 
+                } else {
+                    logToTerminal(`[ERR] ${data.error}`);
+                }
+            } catch (error) {
+                logToTerminal(`[FATAL] Local server unreachable.`);
+            }
+        }
+
+        async function fetchConfig() {
+            try {
+                const response = await fetch('/api/config');
+                const data = await response.json();
+                const name = data.displayName;
+                document.getElementById('pageTitle').innerText = `${name} Internet Portal`;
+                document.getElementById('userHeader').innerText = `${name} SYS_PORTAL`;
+            } catch (error) {
+                console.error('Failed to fetch config', error);
+            }
+        }
+
+        fetchConfig();
+        checkStatus();
+        setInterval(checkStatus, 3000); // UI pings server every 3s
+    </script>
+</body>
+</html>
